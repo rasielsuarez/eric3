@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERIC III - Progress Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        :root {
+            --color-bg: #0f172a; 
+            --color-card: #1e293b;
+            --color-text: #f8fafc;
+            --color-done: #22c55e;      
+            --color-todo: #334155;      
+            --color-active: #ef4444;    
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--color-bg);
+            margin: 0;
+            padding: 0;
+            color: var(--color-text);
+            overflow: hidden; /* We'll use the full viewport */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar & Branding */
+        .top-nav {
+            text-align: center;
+            padding: 15px 0 5px 0;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        /* Main Header Grid */
+        header {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            align-items: center;
+            padding: 0 40px;
+            margin-bottom: 10px;
+        }
+
+        .branding h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            line-height: 1;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .branding .sub {
+            color: #64748b;
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-top: -5px;
+        }
+
+        /* Progress Bar in the Middle */
+        #progress-wrapper {
+            position: relative;
+            height: 60px;
+            background: #1e293b;
+            border-radius: 50px;
+            overflow: hidden;
+            border: 2px solid #334155;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--color-done);
+            width: 0%;
+            transition: width 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .perc-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Legend on the Right */
+        .legend {
+            justify-self: end;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border-left: 4px solid #334155;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600;}
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Chart Area */
+        #chart-container {
+            flex-grow: 1;
+            width: 100%;
+            position: relative;
+        }
+
+        svg { width: 100%; height: 100%; }
+
+        /* Labels */
+        .label-name { fill: white; font-weight: 800; pointer-events: none; text-anchor: middle; text-shadow: 0 1px 3px rgba(0,0,0,0.8);}
+        .label-perc { fill: rgba(255,255,255,0.7); font-weight: 500; pointer-events: none; text-anchor: middle; }
+
+        .active-node circle {
+            animation: pulse-ring 2.5s infinite;
+            stroke: var(--color-active);
+            stroke-width: 4px;
+        }
+
+        @keyframes pulse-ring {
+            0% { filter: drop-shadow(0 0 0px rgba(239, 68, 68, 0.8)); }
+            50% { filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.4)); }
+            100% { filter: drop-shadow(0 0 0px rgba(239, 68, 68, 0.8)); }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            padding: 14px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 10px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            min-width: 160px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">The Encyclopedia of Roman Imperial Coins vol. III</div>
+
+    <header>
+        <div class="branding">
+            <h1>ERIC III</h1>
+            <div class="sub">PROGRESS</div>
+        </div>
+
+        <div id="progress-wrapper">
+            <div id="progress-bar"></div>
+            <div class="perc-label" id="perc-display">0%</div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="dot" style="background:var(--color-done)"></div> Completed</div>
+            <div class="legend-item"><div class="dot" style="background:var(--color-active)"></div> Now Working On</div>
+            <div class="legend-item"><div class="dot" style="background:var(--color-todo)"></div> Pending</div>
+        </div>
+    </header>
+
+    <div id="chart-container">
+        <div id="tooltip" class="tooltip"></div>
+    </div>
+
+    <script>
+        /**
+         * UPDATING PROGRESS:
+         * 1. To change the red focus, update 'activeChapter' below.
+         * 2. To mark a chapter as done, find it in rawData and change its 'null' value (the 3rd item) to its weight.
+         */
+        const activeChapter = "Livia"; 
+        const totalWeight = 61478;
+
+        const rawData = [
+            ["Augustus",722,null],["Caius Caesar",2,2],["Livia",7,null],["Agrippa",4,null],["Nero Claudius Drusus",6,null],["Germanicus",18,null],["Agrippina I",3,null],["Tiberius",77,null],["Drusus",5,null],["Antonia",6,8],["Caligula",56,null],["Claudius I",130,144],["Britannicus",2,null],["Agrippina II",6,null],["Nero",604,740],["Galba",473,null],["Clodius Macer",15,18],["Otho",27,null],["Vitellius",175,null],["Vespasian",765,1123],["Domitilla I",3,3],["Titus",461,null],["Domitian",783,1068],["Domitilla II",1,null],["Domitia",17,null],["Julia Titi",20,null],["Nerva",167,null],["Trajan",761,null],["Plotina",17,null],["Marciana",13,null],["Matidia",6,null],["Hadrian",1552,null],["Sabina",97,null],["Aelius",69,null],["Antoninus Pius",1431,null],["Faustina I",362,null],["Marcus Aurelius",1312,null],["Faustina II",325,null],["Lucius Verus",393,526],["Lucilla",91,99],["Commodus",1042,null],["Crispina",52,null],["Pertinax",68,null],["Didius Julianus",21,null],["Manlia Scantilla",7,null],["Didia Clara",4,4],["Pescennius Niger",191,null],["Clodius Albinus",109,null],["Septimius Severus",1175,1431],["Julia Domna",331,null],["Caracalla",887,866],["Plautilla",28,32],["Geta",279,null],["Macrinus",246,null],["Diadumenian",31,null],["Elagabalus",432,null],["Julia Maesa",62,null],["Julia Soaemias",26,null],["Julia Paula",34,null],["Aquilia Severa",18,null],["Annia Faustina",2,null],["Severus Alexander",741,955],["Julia Mamaea",95,100],["Orbiana",16,null],["Maximinus I",140,null],["Paulina",6,null],["Maximus (Caesar)",21,22],["Gordian I",17,18],["Gordian II",10,10],["Balbinus",31,null],["Pupienus",35,60],["Gordian III",484,597],["Tranquillina",11,11],["Philip I",289,340],["Otacilia Severa",82,99],["Philip II",110,null],["Pacatian",10,null],["Jotapian",6,7],["Trajan Decius",172,null],["Herennia Etruscilla",55,null],["Herennius Etruscus",59,67],["Hostilian",114,null],["Trebonianus Gallus",153,406],["Volusian",206,null],["Aemilian",73,null],["Cornelia Supera",3,null],["Silbannacus",2,null],["Uranius Antoninus",21,null],["Valerian I",386,null],["Mariniana",17,17],["Valerian II",72,null],["Gallienus",1766,null],["Salonina",229,313],["Saloninus",42,null],["Regalianus",9,11],["Dryantilla",3,null],["Postumus",555,null],["Laelianus",12,null],["Marius",19,null],["Victorinus",165,null],["Domitian II",1,null],["Tetricus I",201,null],["Tetricus II",27,null],["Quietus",26,null],["Macrianus",24,32],["Zenobia",2,null],["Vabalathus",22,26],["Carausius",999,null],["Allectus",157,null],["Claudius II",575,null],["Quintillus",133,null],["Aurelian",991,null],["Severina",80,123],["Tacitus",350,null],["Florian",232,450],["Probus",2611,null],["Saturninus",1,null],["Carus",224,null],["Magnia Urbica",29,null],["Carinus",356,null],["Nigrinian",8,11],["Numerian",197,null],["Julian I",9,null],["Diocletian",1679,null],["Maximian",1948,null],["Domitius Domitianus",9,null],["Constantius I",1068,null],["Theodora",15,null],["Galerius",1311,1454],["Galeria Valeria",133,null],["Severus II",202,null],["Maxentius",323,null],["Romulus",34,null],["Constantine I",3429,null],["Helena",124,null],["Fausta",107,null],["Alexander",16,null],["Licinius I",1119,null],["Constantia",1,null],["Maximinus II",1111,1252],["Crispus",758,null],["Valerius Valens",6,7],["Licinius II",247,null],["Martinian",11,null],["Constantine II",1285,null],["Delmatius",100,null],["Hanniballianus",5,7],["Constans",1439,1701],["Constantius II",3361,null],["Magnentius",202,null],["Decentius",141,null],["Vetranio",77,86],["Nepotian",14,null],["Constantius Gallus",402,453],["Julian II",550,null],["Jovian",167,null],["Valentinian I",742,null],["Valens",944,null],["Procopius",81,127],["Gratian",613,698],["Valentinian II",505,null],["Theodosius I",556,null],["Aelia Flaccilla",44,null],["Magnus Maximus",67,70],["Flavius Victor",19,19],["Eugenius",21,null],["Honorius",307,null],["Constantine III",32,null],["Constans II",3,null],["Maximus",3,3],["Priscus Attalus",22,null],["Jovinus",15,15],["Sebastianus",2,null],["Constantius III",4,null],["Galla Placidia",34,null],["Johannes",25,19],["Valentinian III",158,null],["Licinia Eudoxia",12,null],["Honoria",4,null],["Petronius Maximus",2,2],["Avitus",13,9],["Majorian",24,null],["Libius Severus",20,null],["Anthemius",65,null],["Euphemia",6,6],["Olybrius",4,3],["Glycerius",11,null],["Julius Nepos",17,21],["Romulus Augustus",12,null],["Anonymous Roman",382,null],["Arcadius",454,557],["Eudoxia",36,null],["Pulcheria",33,null],["Theodosius II",251,null],["Eudocia",27,32],["Marcian",58,null],["Leo I",125,null],["Verina",10,10],["Leo II",24,22],["Zeno",108,122],["Ariadne",9,null],["Basiliscus",65,null],["Zenonis",4,null],["Leontius I",4,null],["Anastasius I",131,null],["Justin I",93,null],["Justinian I",471,null],["Justin II",197,470],["Tiberius II",82,null],["Maurice Tiberius",311,529],["Theodosius III",4,null],["Phocas",217,null],["Heraclius",575,860],["Constans III",740,780],["Mezezius",3,null],["Constantine IV",185,null],["Justinian II",181,null],["Leontius II",66,null],["Tiberius III",127,139],["Philippicus",52,null],["Anastasius II",55,null],["Theodosius IV",37,null],["Leo III",106,153],["Constantine V",61,null],["Artavasdus",15,14],["Leo IV",10,10],["Constantine VI",9,null],["Irene",6,5],["Nicephorus I",16,null],["Michael I",14,13],["Leo V",22,22],["Michael II",18,null],["Theophilus",36,null],["Michael III",15,null],["Basil I",24,null],["Leo VI",11,null],["Alexander",4,null],["Constantine VII",14,15],["Romanus I",17,null],["Romanus II",2,null],["Nicephorus II",8,5],["John I",14,null],["Basil II",18,null],["Constantine VIII",3,null],["Romanus III",3,3],["Michael IV",1,1],["Michael V",1,null],["Zoe & Theodora",1,null],["Constantine IX",9,null],["Theodora",3,null],["Michael VI",3,null],["Isaac I",4,null],["Constantine X",9,null],["Eudocia",2,null],["Romanus IV",6,null],["Michael VII",16,null],["Nicephorus III",9,null],["Basilacius",2,null],["Alexius I",39,null],["John II",18,null],["Manuel I",25,null],["Andronicus I",7,7],["Isaac Comnenus",9,12],["Isaac II",9,null],["Theodore Mangaphas",1,null],["Alexius III",8,null],["Alexius IV",1,null],["Alexius V",1,null],["Theodore Comnenus",15,null],["Manuel Comnenus",13,11],["John Comnenus",19,25],["Michael Comnenus II",8,8],["Theodore I",12,null],["John III",59,null],["Theodore II",17,null],["Michael VIII",82,null],["Andronicus II",109,null],["Andronicus III",31,38],["John V",23,32],["John VI",14,2],["Andronicus IV",3,null],["John VII",2,null],["Manuel II",11,11],["John VIII",5,null],["Constantine XI",3,null],["Anonymous Coinage",4,null]
+        ];
+
+        let currentCompletedWeight = 0;
+        const data = {
+            name: "ERIC III",
+            children: rawData.map(d => {
+                const actualVal = d[1] || 1;
+                const isDone = d[2] !== null;
+                const share = ((actualVal / totalWeight) * 100).toFixed(2);
+                if (isDone) currentCompletedWeight += actualVal;
+                return { name: d[0], share: share, value: Math.pow(actualVal, 0.7), done: isDone };
+            })
+        };
+
+        const totalPerc = ((currentCompletedWeight / totalWeight) * 100).toFixed(1);
+        document.getElementById('perc-display').innerText = totalPerc + "%";
+        setTimeout(() => { document.getElementById('progress-bar').style.width = totalPerc + "%"; }, 300);
+
+        const container = document.getElementById('chart-container');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        const svg = d3.select("#chart-container").append("svg")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("preserveAspectRatio", "xMidYMid meet");
+
+        const pack = d3.pack().size([width, height]).padding(4);
+        const root = d3.hierarchy(data).sum(d => d.value).sort((a, b) => b.value - a.value);
+        const nodes = pack(root).leaves();
+
+        const nodeGroups = svg.selectAll("g").data(nodes).enter().append("g")
+            .attr("transform", d => `translate(${d.x},${d.y})`)
+            .attr("class", d => `node ${d.data.name === activeChapter ? 'active-node' : ''}`)
+            .on("mouseover", showTooltip)
+            .on("mousemove", moveTooltip)
+            .on("mouseout", hideTooltip);
+
+        nodeGroups.append("circle")
+            .attr("r", 0)
+            .style("fill", d => {
+                if (d.data.name === activeChapter) return "var(--color-active)";
+                if (d.data.done) return "var(--color-done)";
+                return "var(--color-todo)";
+            })
+            .style("fill-opacity", d => d.data.done || d.data.name === activeChapter ? 0.95 : 0.3)
+            .transition().duration(1000).delay((d, i) => i * 2).attr("r", d => d.r);
+
+        nodeGroups.filter(d => d.r > 20).append("text")
+            .attr("class", "label-name")
+            .attr("y", d => d.r > 40 ? -5 : 4)
+            .style("font-size", d => Math.min(d.r / 3, 14) + "px")
+            .text(d => d.data.name)
+            .style("opacity", 0).transition().duration(1000).delay(800).style("opacity", 1);
+
+        nodeGroups.filter(d => d.r > 40).append("text")
+            .attr("class", "label-perc")
+            .attr("y", d => (Math.min(d.r / 3, 14)) + 5)
+            .style("font-size", d => Math.min(d.r / 5, 11) + "px")
+            .text(d => d.data.share + "%")
+            .style("opacity", 0).transition().duration(1000).delay(1000).style("opacity", 1);
+
+        const tooltip = d3.select("#tooltip");
+
+        function showTooltip(event, d) {
+            d3.select(this).raise();
+            tooltip.transition().duration(100).style("opacity", 1);
+            let status = d.data.done ? "✓ Completed" : "Pending";
+            if(d.data.name === activeChapter) status = "🚀 Current Focus";
+
+            tooltip.html(`
+                <div style="font-weight:800; color:#fff; border-bottom: 1px solid #475569; padding-bottom:4px; margin-bottom:6px;">${d.data.name}</div>
+                <div style="font-size: 13px;">Contribution: <b>${d.data.share}%</b></div>
+                <div style="margin-top:6px; font-weight:700; font-size:12px; color:${d.data.name === activeChapter ? '#f87171' : (d.data.done ? '#4ade80' : '#94a3b8')}">${status}</div>
+            `);
+        }
+
+        function moveTooltip(event) {
+            const tooltipNode = tooltip.node();
+            const tooltipWidth = tooltipNode.offsetWidth;
+            const tooltipHeight = tooltipNode.offsetHeight;
+            
+            // Smart positioning logic
+            let xPos = event.pageX + 15;
+            let yPos = event.pageY - 20;
+
+            // If tooltip goes off right edge, shunt it left
+            if (xPos + tooltipWidth > window.innerWidth) {
+                xPos = event.pageX - tooltipWidth - 15;
+            }
+            // If tooltip goes off bottom edge, shunt it up
+            if (yPos + tooltipHeight > window.innerHeight) {
+                yPos = event.pageY - tooltipHeight - 15;
+            }
+
+            tooltip.style("left", xPos + "px").style("top", yPos + "px");
+        }
+
+        function hideTooltip() { tooltip.transition().duration(100).style("opacity", 0); }
+
+        window.addEventListener('resize', () => {
+            const newWidth = container.clientWidth;
+            const newHeight = container.clientHeight;
+            svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
+        });
+    </script>
+</body>
+</html>
