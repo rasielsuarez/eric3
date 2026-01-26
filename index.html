@@ -21,13 +21,12 @@
             margin: 0;
             padding: 0;
             color: var(--color-text);
-            overflow: hidden; /* We'll use the full viewport */
+            overflow: hidden; 
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* Top Bar & Branding */
         .top-nav {
             text-align: center;
             padding: 15px 0 5px 0;
@@ -37,7 +36,6 @@
             text-transform: uppercase;
         }
 
-        /* Main Header Grid */
         header {
             display: grid;
             grid-template-columns: 1fr 2fr 1fr;
@@ -61,7 +59,6 @@
             margin-top: -5px;
         }
 
-        /* Progress Bar in the Middle */
         #progress-wrapper {
             position: relative;
             height: 60px;
@@ -89,7 +86,6 @@
             text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
-        /* Legend on the Right */
         .legend {
             justify-self: end;
             display: flex;
@@ -104,7 +100,6 @@
         .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600;}
         .dot { width: 12px; height: 12px; border-radius: 50%; }
 
-        /* Chart Area */
         #chart-container {
             flex-grow: 1;
             width: 100%;
@@ -113,7 +108,6 @@
 
         svg { width: 100%; height: 100%; }
 
-        /* Labels */
         .label-name { fill: white; font-weight: 800; pointer-events: none; text-anchor: middle; text-shadow: 0 1px 3px rgba(0,0,0,0.8);}
         .label-perc { fill: rgba(255,255,255,0.7); font-weight: 500; pointer-events: none; text-anchor: middle; }
 
@@ -129,7 +123,6 @@
             100% { filter: drop-shadow(0 0 0px rgba(239, 68, 68, 0.8)); }
         }
 
-        /* Tooltip */
         .tooltip {
             position: absolute;
             padding: 14px;
@@ -174,16 +167,300 @@
     </div>
 
     <script>
-        /**
-         * UPDATING PROGRESS:
-         * 1. To change the red focus, update 'activeChapter' below.
-         * 2. To mark a chapter as done, find it in rawData and change its 'null' value (the 3rd item) to its weight.
-         */
         const activeChapter = "Livia"; 
         const totalWeight = 61478;
 
+        /**
+         * UPDATING PROGRESS:
+         * To mark a ruler as done, replace 'null' (index 2) with weight and add the date (index 3).
+         */
         const rawData = [
-            ["Augustus",722,null],["Caius Caesar",2,2],["Livia",7,null],["Agrippa",4,null],["Nero Claudius Drusus",6,null],["Germanicus",18,null],["Agrippina I",3,null],["Tiberius",77,null],["Drusus",5,null],["Antonia",6,8],["Caligula",56,null],["Claudius I",130,144],["Britannicus",2,null],["Agrippina II",6,null],["Nero",604,740],["Galba",473,null],["Clodius Macer",15,18],["Otho",27,null],["Vitellius",175,null],["Vespasian",765,1123],["Domitilla I",3,3],["Titus",461,null],["Domitian",783,1068],["Domitilla II",1,null],["Domitia",17,null],["Julia Titi",20,null],["Nerva",167,null],["Trajan",761,null],["Plotina",17,null],["Marciana",13,null],["Matidia",6,null],["Hadrian",1552,null],["Sabina",97,null],["Aelius",69,null],["Antoninus Pius",1431,null],["Faustina I",362,null],["Marcus Aurelius",1312,null],["Faustina II",325,null],["Lucius Verus",393,526],["Lucilla",91,99],["Commodus",1042,null],["Crispina",52,null],["Pertinax",68,null],["Didius Julianus",21,null],["Manlia Scantilla",7,null],["Didia Clara",4,4],["Pescennius Niger",191,null],["Clodius Albinus",109,null],["Septimius Severus",1175,1431],["Julia Domna",331,null],["Caracalla",887,866],["Plautilla",28,32],["Geta",279,null],["Macrinus",246,null],["Diadumenian",31,null],["Elagabalus",432,null],["Julia Maesa",62,null],["Julia Soaemias",26,null],["Julia Paula",34,null],["Aquilia Severa",18,null],["Annia Faustina",2,null],["Severus Alexander",741,955],["Julia Mamaea",95,100],["Orbiana",16,null],["Maximinus I",140,null],["Paulina",6,null],["Maximus (Caesar)",21,22],["Gordian I",17,18],["Gordian II",10,10],["Balbinus",31,null],["Pupienus",35,60],["Gordian III",484,597],["Tranquillina",11,11],["Philip I",289,340],["Otacilia Severa",82,99],["Philip II",110,null],["Pacatian",10,null],["Jotapian",6,7],["Trajan Decius",172,null],["Herennia Etruscilla",55,null],["Herennius Etruscus",59,67],["Hostilian",114,null],["Trebonianus Gallus",153,406],["Volusian",206,null],["Aemilian",73,null],["Cornelia Supera",3,null],["Silbannacus",2,null],["Uranius Antoninus",21,null],["Valerian I",386,null],["Mariniana",17,17],["Valerian II",72,null],["Gallienus",1766,null],["Salonina",229,313],["Saloninus",42,null],["Regalianus",9,11],["Dryantilla",3,null],["Postumus",555,null],["Laelianus",12,null],["Marius",19,null],["Victorinus",165,null],["Domitian II",1,null],["Tetricus I",201,null],["Tetricus II",27,null],["Quietus",26,null],["Macrianus",24,32],["Zenobia",2,null],["Vabalathus",22,26],["Carausius",999,null],["Allectus",157,null],["Claudius II",575,null],["Quintillus",133,null],["Aurelian",991,null],["Severina",80,123],["Tacitus",350,null],["Florian",232,450],["Probus",2611,null],["Saturninus",1,null],["Carus",224,null],["Magnia Urbica",29,null],["Carinus",356,null],["Nigrinian",8,11],["Numerian",197,null],["Julian I",9,null],["Diocletian",1679,null],["Maximian",1948,null],["Domitius Domitianus",9,null],["Constantius I",1068,null],["Theodora",15,null],["Galerius",1311,1454],["Galeria Valeria",133,null],["Severus II",202,null],["Maxentius",323,null],["Romulus",34,null],["Constantine I",3429,null],["Helena",124,null],["Fausta",107,null],["Alexander",16,null],["Licinius I",1119,null],["Constantia",1,null],["Maximinus II",1111,1252],["Crispus",758,null],["Valerius Valens",6,7],["Licinius II",247,null],["Martinian",11,null],["Constantine II",1285,null],["Delmatius",100,null],["Hanniballianus",5,7],["Constans",1439,1701],["Constantius II",3361,null],["Magnentius",202,null],["Decentius",141,null],["Vetranio",77,86],["Nepotian",14,null],["Constantius Gallus",402,453],["Julian II",550,null],["Jovian",167,null],["Valentinian I",742,null],["Valens",944,null],["Procopius",81,127],["Gratian",613,698],["Valentinian II",505,null],["Theodosius I",556,null],["Aelia Flaccilla",44,null],["Magnus Maximus",67,70],["Flavius Victor",19,19],["Eugenius",21,null],["Honorius",307,null],["Constantine III",32,null],["Constans II",3,null],["Maximus",3,3],["Priscus Attalus",22,null],["Jovinus",15,15],["Sebastianus",2,null],["Constantius III",4,null],["Galla Placidia",34,null],["Johannes",25,19],["Valentinian III",158,null],["Licinia Eudoxia",12,null],["Honoria",4,null],["Petronius Maximus",2,2],["Avitus",13,9],["Majorian",24,null],["Libius Severus",20,null],["Anthemius",65,null],["Euphemia",6,6],["Olybrius",4,3],["Glycerius",11,null],["Julius Nepos",17,21],["Romulus Augustus",12,null],["Anonymous Roman",382,null],["Arcadius",454,557],["Eudoxia",36,null],["Pulcheria",33,null],["Theodosius II",251,null],["Eudocia",27,32],["Marcian",58,null],["Leo I",125,null],["Verina",10,10],["Leo II",24,22],["Zeno",108,122],["Ariadne",9,null],["Basiliscus",65,null],["Zenonis",4,null],["Leontius I",4,null],["Anastasius I",131,null],["Justin I",93,null],["Justinian I",471,null],["Justin II",197,470],["Tiberius II",82,null],["Maurice Tiberius",311,529],["Theodosius III",4,null],["Phocas",217,null],["Heraclius",575,860],["Constans III",740,780],["Mezezius",3,null],["Constantine IV",185,null],["Justinian II",181,null],["Leontius II",66,null],["Tiberius III",127,139],["Philippicus",52,null],["Anastasius II",55,null],["Theodosius IV",37,null],["Leo III",106,153],["Constantine V",61,null],["Artavasdus",15,14],["Leo IV",10,10],["Constantine VI",9,null],["Irene",6,5],["Nicephorus I",16,null],["Michael I",14,13],["Leo V",22,22],["Michael II",18,null],["Theophilus",36,null],["Michael III",15,null],["Basil I",24,null],["Leo VI",11,null],["Alexander",4,null],["Constantine VII",14,15],["Romanus I",17,null],["Romanus II",2,null],["Nicephorus II",8,5],["John I",14,null],["Basil II",18,null],["Constantine VIII",3,null],["Romanus III",3,3],["Michael IV",1,1],["Michael V",1,null],["Zoe & Theodora",1,null],["Constantine IX",9,null],["Theodora",3,null],["Michael VI",3,null],["Isaac I",4,null],["Constantine X",9,null],["Eudocia",2,null],["Romanus IV",6,null],["Michael VII",16,null],["Nicephorus III",9,null],["Basilacius",2,null],["Alexius I",39,null],["John II",18,null],["Manuel I",25,null],["Andronicus I",7,7],["Isaac Comnenus",9,12],["Isaac II",9,null],["Theodore Mangaphas",1,null],["Alexius III",8,null],["Alexius IV",1,null],["Alexius V",1,null],["Theodore Comnenus",15,null],["Manuel Comnenus",13,11],["John Comnenus",19,25],["Michael Comnenus II",8,8],["Theodore I",12,null],["John III",59,null],["Theodore II",17,null],["Michael VIII",82,null],["Andronicus II",109,null],["Andronicus III",31,38],["John V",23,32],["John VI",14,2],["Andronicus IV",3,null],["John VII",2,null],["Manuel II",11,11],["John VIII",5,null],["Constantine XI",3,null],["Anonymous Coinage",4,null]
+            ["Augustus", 722, null],
+            ["Caius Caesar", 2, 2, "3/31/2015"],
+            ["Livia", 7, null],
+            ["Agrippa", 4, null],
+            ["Nero Claudius Drusus", 6, null],
+            ["Germanicus", 18, null],
+            ["Agrippina I", 3, null],
+            ["Tiberius", 77, null],
+            ["Drusus", 5, null],
+            ["Antonia", 6, 8, "4/1/2015"],
+            ["Caligula", 56, null],
+            ["Claudius I", 130, 144, "12/29/2014"],
+            ["Britannicus", 2, null],
+            ["Agrippina II", 6, 6, "9/21/2013"],
+            ["Nero", 604, 740, "4/30/2020"],
+            ["Galba", 473, null],
+            ["Clodius Macer", 15, 18, "5/2/2020"],
+            ["Otho", 27, null],
+            ["Vitellius", 175, null],
+            ["Vespasian", 765, 1123, "2/16/2019"],
+            ["Domitilla I", 3, 3, "9/17/2015"],
+            ["Titus", 461, null],
+            ["Domitian", 783, 1068, "4/3/2014"],
+            ["Domitilla II", 1, null],
+            ["Domitia", 17, null],
+            ["Julia Titi", 20, null],
+            ["Nerva", 167, null],
+            ["Trajan", 761, null],
+            ["Plotina", 17, null],
+            ["Marciana", 13, null],
+            ["Matidia", 6, null],
+            ["Hadrian", 1552, null],
+            ["Sabina", 97, null],
+            ["Aelius", 69, null],
+            ["Antoninus Pius", 1431, null],
+            ["Faustina I", 362, null],
+            ["Marcus Aurelius", 1312, null],
+            ["Faustina II", 325, null],
+            ["Lucius Verus", 393, 526, "3/13/2015"],
+            ["Lucilla", 91, 99, "3/30/2015"],
+            ["Commodus", 1042, null],
+            ["Crispina", 52, null],
+            ["Pertinax", 68, null],
+            ["Didius Julianus", 21, null],
+            ["Manlia Scantilla", 7, null],
+            ["Didia Clara", 4, 4, "9/22/2019"],
+            ["Pescennius Niger", 191, null],
+            ["Clodius Albinus", 109, null],
+            ["Septimius Severus", 1175, 1431, "9/6/2013"],
+            ["Julia Domna", 331, null],
+            ["Caracalla", 887, 866, "9/5/2015"],
+            ["Plautilla", 28, 32, "10/12/2014"],
+            ["Geta", 279, null],
+            ["Macrinus", 246, null],
+            ["Diadumenian", 31, null],
+            ["Elagabalus", 432, null],
+            ["Julia Maesa", 62, null],
+            ["Julia Soaemias", 26, null],
+            ["Julia Paula", 34, null],
+            ["Aquilia Severa", 18, null],
+            ["Annia Faustina", 2, null],
+            ["Severus Alexander", 741, 955, "12/27/2013"],
+            ["Julia Mamaea", 95, 100, "9/9/2020"],
+            ["Orbiana", 16, null],
+            ["Maximinus I", 140, null],
+            ["Paulina", 6, null],
+            ["Maximus (Caesar)", 21, 22, "11/27/2014"],
+            ["Gordian I", 17, 18, "6/8/2025"],
+            ["Gordian II", 10, 10, "9/17/2015"],
+            ["Balbinus", 31, null],
+            ["Pupienus", 35, 60, "4/10/2014"],
+            ["Gordian III", 484, 597, "8/10/2019"],
+            ["Tranquillina", 11, 11, "9/22/2013"],
+            ["Philip I", 289, 340, "8/4/2014"],
+            ["Otacilia Severa", 82, 99, "8/25/2014"],
+            ["Philip II", 110, null],
+            ["Pacatian", 10, null],
+            ["Jotapian", 6, 7, "9/22/2019"],
+            ["Trajan Decius", 172, null],
+            ["Herennia Etruscilla", 55, null],
+            ["Herennius Etruscus", 59, 67, "12/29/2013"],
+            ["Hostilian", 114, null],
+            ["Trebonianus Gallus", 153, 406, "10/10/2015"],
+            ["Volusian", 206, null],
+            ["Aemilian", 73, null],
+            ["Cornelia Supera", 3, null],
+            ["Silbannacus", 2, null],
+            ["Uranius Antoninus", 21, null],
+            ["Valerian I", 386, null],
+            ["Mariniana", 17, 17, "3/15/2015"],
+            ["Valerian II", 72, null],
+            ["Gallienus", 1766, null],
+            ["Salonina", 229, 313, "9/17/2014"],
+            ["Saloninus", 42, null],
+            ["Regalianus", 9, 11, "11/27/2014"],
+            ["Dryantilla", 3, null],
+            ["Postumus", 555, null],
+            ["Laelianus", 12, null],
+            ["Marius", 19, null],
+            ["Victorinus", 165, null],
+            ["Domitian II", 1, null],
+            ["Tetricus I", 201, null],
+            ["Tetricus II", 27, null],
+            ["Quietus", 26, null],
+            ["Macrianus", 24, 32, "11/21/2014"],
+            ["Zenobia", 2, null],
+            ["Vabalathus", 22, 26, "3/11/2013"],
+            ["Carausius", 999, null],
+            ["Allectus", 157, null],
+            ["Claudius II", 575, null],
+            ["Quintillus", 133, null],
+            ["Aurelian", 991, null],
+            ["Severina", 80, 123, "10/12/2019"],
+            ["Tacitus", 350, null],
+            ["Florian", 232, 450, "4/13/2015"],
+            ["Probus", 2611, null],
+            ["Saturninus", 1, null],
+            ["Carus", 224, null],
+            ["Magnia Urbica", 29, null],
+            ["Carinus", 356, null],
+            ["Nigrinian", 8, 11, "10/12/2014"],
+            ["Numerian", 197, null],
+            ["Julian I", 9, null],
+            ["Diocletian", 1679, null],
+            ["Maximian", 1948, null],
+            ["Domitius Domitianus", 9, null],
+            ["Constantius I", 1068, null],
+            ["Theodora", 15, null],
+            ["Galerius", 1311, 1454, "9/22/2019"],
+            ["Galeria Valeria", 133, null],
+            ["Severus II", 202, null],
+            ["Maxentius", 323, null],
+            ["Romulus", 34, null],
+            ["Constantine I", 3429, null],
+            ["Helena", 124, null],
+            ["Fausta", 107, null],
+            ["Alexander", 16, null],
+            ["Licinius I", 1119, null],
+            ["Constantia", 1, null],
+            ["Maximinus II", 1111, 1252, "1/19/2014"],
+            ["Crispus", 758, null],
+            ["Valerius Valens", 6, 7, "9/15/2015"],
+            ["Licinius II", 247, null],
+            ["Martinian", 11, null],
+            ["Constantine II", 1285, null],
+            ["Delmatius", 100, null],
+            ["Hanniballianus", 5, 7, "9/18/2014"],
+            ["Constans", 1439, 1701, null],
+            ["Constantius II", 3361, null],
+            ["Magnentius", 202, null],
+            ["Decentius", 141, null],
+            ["Vetranio", 77, 86, "4/14/2015"],
+            ["Nepotian", 14, null],
+            ["Constantius Gallus", 402, 453, "4/21/2014"],
+            ["Julian II", 550, null],
+            ["Jovian", 167, null],
+            ["Valentinian I", 742, null],
+            ["Valens", 944, null],
+            ["Procopius", 81, 127, "4/7/2014"],
+            ["Gratian", 613, 698, "11/11/2014"],
+            ["Valentinian II", 505, null],
+            ["Theodosius I", 556, null],
+            ["Aelia Flaccilla", 44, null],
+            ["Magnus Maximus", 67, 70, "3/22/2015"],
+            ["Flavius Victor", 19, 19, "3/22/2015"],
+            ["Eugenius", 21, null],
+            ["Honorius", 307, null],
+            ["Constantine III", 32, null],
+            ["Constans II", 3, null],
+            ["Maximus", 3, 3, "5/4/2020"],
+            ["Priscus Attalus", 22, null],
+            ["Jovinus", 15, 15, "3/30/2015"],
+            ["Sebastianus", 2, null],
+            ["Constantius III", 4, 4, "3/14/2015"],
+            ["Galla Placidia", 34, null],
+            ["Johannes", 25, 19, "5/6/2020"],
+            ["Valentinian III", 158, null],
+            ["Licinia Eudoxia", 12, null],
+            ["Honoria", 4, null],
+            ["Petronius Maximus", 2, 2, "4/10/2014"],
+            ["Avitus", 13, 9, "11/20/2014"],
+            ["Majorian", 24, null],
+            ["Libius Severus", 20, null],
+            ["Anthemius", 65, null],
+            ["Euphemia", 6, 6, "4/2/2015"],
+            ["Olybrius", 4, 3, "8/25/2014"],
+            ["Glycerius", 11, null],
+            ["Julius Nepos", 17, 21, "1/22/2015"],
+            ["Romulus Augustus", 12, null],
+            ["Anonymous Roman", 382, null],
+            ["Arcadius", 454, 557, "5/26/2020"],
+            ["Eudoxia", 36, null],
+            ["Pulcheria", 33, null],
+            ["Theodosius II", 251, null],
+            ["Eudocia", 27, 32, "11/4/2020"],
+            ["Marcian", 58, null],
+            ["Leo I", 125, null],
+            ["Verina", 10, 10, "8/25/2014"],
+            ["Leo II", 24, 22, "9/19/2014"],
+            ["Zeno", 108, 122, "11/2/2020"],
+            ["Ariadne", 9, null],
+            ["Basiliscus", 65, null],
+            ["Zenonis", 4, null],
+            ["Leontius I", 4, null],
+            ["Anastasius I", 131, null],
+            ["Justin I", 93, null],
+            ["Justinian I", 471, null],
+            ["Justin II", 197, 470, "10/5/2019"],
+            ["Tiberius II", 82, null],
+            ["Maurice Tiberius", 311, 529, "1/21/2015"],
+            ["Theodosius III", 4, null],
+            ["Phocas", 217, null],
+            ["Heraclius", 575, 860, "5/23/2021"],
+            ["Constans III", 740, 780, "6/1/2025"],
+            ["Mezezius", 3, null],
+            ["Constantine IV", 185, null],
+            ["Justinian II", 181, null],
+            ["Leontius II", 66, null],
+            ["Tiberius III", 127, 139, "5/1/2020"],
+            ["Philippicus", 52, null],
+            ["Anastasius II", 55, null],
+            ["Theodosius IV", 37, null],
+            ["Leo III", 106, 153, "9/23/2014"],
+            ["Constantine V", 61, null],
+            ["Artavasdus", 15, 14, "3/17/2015"],
+            ["Leo IV", 10, 10, "11/11/2020"],
+            ["Constantine VI", 9, null],
+            ["Irene", 6, 5, "4/26/2013"],
+            ["Nicephorus I", 16, null],
+            ["Michael I", 14, 13, "2/17/2019"],
+            ["Leo V", 22, 22, "5/4/2020"],
+            ["Michael II", 18, null],
+            ["Theophilus", 36, null],
+            ["Michael III", 15, null],
+            ["Basil I", 24, null],
+            ["Leo VI", 11, null],
+            ["Alexander", 4, 4, "9/20/2013"],
+            ["Constantine VII", 14, 15, "9/20/2013"],
+            ["Romanus I", 17, null],
+            ["Romanus II", 2, null],
+            ["Nicephorus II", 8, 5, "10/14/2014"],
+            ["John I", 14, null],
+            ["Basil II", 18, null],
+            ["Constantine VIII", 3, null],
+            ["Romanus III", 3, 3, "3/17/2015"],
+            ["Michael IV", 1, 1, "3/31/2015"],
+            ["Michael V", 1, null],
+            ["Zoe & Theodora", 1, null],
+            ["Constantine IX", 9, null],
+            ["Theodora", 3, null],
+            ["Michael VI", 3, null],
+            ["Isaac I", 4, null],
+            ["Constantine X", 9, null],
+            ["Eudocia (Byz.)", 2, null],
+            ["Romanus IV", 6, null],
+            ["Michael VII", 16, null],
+            ["Nicephorus III", 9, null],
+            ["Basilacius", 2, null],
+            ["Alexius I", 39, null],
+            ["John II", 18, null],
+            ["Manuel I", 25, null],
+            ["Andronicus I", 7, 7, "9/14/2015"],
+            ["Isaac Comnenus", 9, 12, "11/13/2020"],
+            ["Isaac II", 9, null],
+            ["Theodore Mangaphas", 1, null],
+            ["Alexius III", 8, null],
+            ["Alexius IV", 1, null],
+            ["Alexius V", 1, null],
+            ["Theodore Comnenus", 15, null],
+            ["Manuel Comnenus", 13, 11, "5/5/2020"],
+            ["John Comnenus", 19, 25, "11/10/2020"],
+            ["Michael Comnenus II", 8, 8, "11/20/2014"],
+            ["Theodore I", 12, null],
+            ["John III", 59, null],
+            ["Theodore II", 17, null],
+            ["Michael VIII", 82, null],
+            ["Andronicus II", 109, null],
+            ["Andronicus III", 31, 38, "9/22/2013"],
+            ["John V", 23, 32, "11/25/2014"],
+            ["John VI", 14, 2, "3/14/2015"],
+            ["Andronicus IV", 3, null],
+            ["John VII", 2, null],
+            ["Manuel II", 11, 11, "1/26/2015"],
+            ["John VIII", 5, null],
+            ["Constantine XI", 3, null],
+            ["Anonymous Coinage", 4, null]
         ];
 
         let currentCompletedWeight = 0;
@@ -194,7 +471,13 @@
                 const isDone = d[2] !== null;
                 const share = ((actualVal / totalWeight) * 100).toFixed(2);
                 if (isDone) currentCompletedWeight += actualVal;
-                return { name: d[0], share: share, value: Math.pow(actualVal, 0.7), done: isDone };
+                return { 
+                    name: d[0], 
+                    share: share, 
+                    value: Math.pow(actualVal, 0.7), 
+                    done: isDone,
+                    completedDate: d[3] || null 
+                };
             })
         };
 
@@ -253,10 +536,13 @@
             let status = d.data.done ? "✓ Completed" : "Pending";
             if(d.data.name === activeChapter) status = "🚀 Current Focus";
 
+            const dateStr = d.data.completedDate ? `<div style="font-size: 11px; margin-top: 4px; color: #94a3b8;">Finished: ${d.data.completedDate}</div>` : "";
+
             tooltip.html(`
                 <div style="font-weight:800; color:#fff; border-bottom: 1px solid #475569; padding-bottom:4px; margin-bottom:6px;">${d.data.name}</div>
                 <div style="font-size: 13px;">Contribution: <b>${d.data.share}%</b></div>
                 <div style="margin-top:6px; font-weight:700; font-size:12px; color:${d.data.name === activeChapter ? '#f87171' : (d.data.done ? '#4ade80' : '#94a3b8')}">${status}</div>
+                ${dateStr}
             `);
         }
 
@@ -264,20 +550,10 @@
             const tooltipNode = tooltip.node();
             const tooltipWidth = tooltipNode.offsetWidth;
             const tooltipHeight = tooltipNode.offsetHeight;
-            
-            // Smart positioning logic
             let xPos = event.pageX + 15;
             let yPos = event.pageY - 20;
-
-            // If tooltip goes off right edge, shunt it left
-            if (xPos + tooltipWidth > window.innerWidth) {
-                xPos = event.pageX - tooltipWidth - 15;
-            }
-            // If tooltip goes off bottom edge, shunt it up
-            if (yPos + tooltipHeight > window.innerHeight) {
-                yPos = event.pageY - tooltipHeight - 15;
-            }
-
+            if (xPos + tooltipWidth > window.innerWidth) xPos = event.pageX - tooltipWidth - 15;
+            if (yPos + tooltipHeight > window.innerHeight) yPos = event.pageY - tooltipHeight - 15;
             tooltip.style("left", xPos + "px").style("top", yPos + "px");
         }
 
